@@ -30,13 +30,16 @@ En NP2, el equipo extendió el nodo local hacia un sistema conectado mediante MQ
 | **Javier Vidal** | Apoyo en la configuración MQTT, conexiones y lógica de envío de datos al broker. | [Función `publicarDatos()`](https://github.com/FelipeS901/Trabajo-prevencion-incendios/blob/main/CODIGOS/E33_P23_Firmware.ino#L923-L1005) |
 | **Fiorella Bovet** | Edición del firmware, reconexión no bloqueante y actualización del grafo FSM a seis estados. | [Firmware actualizado](https://github.com/FelipeS901/Trabajo-prevencion-incendios/blob/main/CODIGOS/E33_P23_Firmware.ino) · [Grafo FSM](https://github.com/FelipeS901/Trabajo-prevencion-incendios/blob/main/docs/Grafo-Estados.drawio) |
 | **Felipe Stuardo** | Documentación de GT4, gestión del repositorio, organización de entregas y diseño 3D. | [Historial del repositorio](https://github.com/FelipeS901/Trabajo-prevencion-incendios/commits/main/) |
-| **Victoria Rojas** | Integración y actualización del firmware oficial (sensor MQ-2), control de tags/releases y coordinación final. | [Commits de Victoria Rojas](https://github.com/FelipeS901/Trabajo-prevencion-incendios/commits/main/?author=vctoriaing) |
+| **Victoria Rojas** | Integración y actualización del firmware oficial (sensor MQ-2), control de tags/releases y coordination final. | [Commits de Victoria Rojas](https://github.com/FelipeS901/Trabajo-prevencion-incendios/commits/main/?author=vctoriaing) |
 
-#### Correcciones de NP1 y Aclaraciones Técnicas
-* **Grafo FSM:** Se confirma el uso oficial del grafo de **6 estados principales** (`PRECALENTANDO`, `CALIBRANDO`, `VIGILANDO`, `SOSPECHA`, `ALARMA_CONFIRMADA`, `ERROR_SEGURO`) alineado con el firmware real.
-* **Protección de Hardware:** Montaje con filtro RC (resistencia de 1 kΩ y condensador de 100 nF) en la entrada del GPIO 34.
-* **Tensión del Regulador (LM2596):** Ajustada físicamente a ~5V estables mediante multímetro por Victoria y Fiorella durante el montaje inicial, sirviendo de fundamento para la constante `VC_SENSOR_MV`.
-* **Lógica de Confirmación de Alarma:** Se mantiene la exigencia de 2 sensores simultáneos en estado `SOSPECHA` para evitar falsas alarmas. Como trabajo futuro (Evaluación 3), se contempla un contador de reincidencia (escalamiento por tiempo de exposición al humo) y umbral térmico relativo a la temperatura ambiente.
+#### Correcciones de NP1 y Aclaraciones de Implementación
+Tras revisar la retroalimentación docente, el equipo verificó el estado del firmware y la documentación, aplicando y documentando las siguientes correcciones:
+* **Grafo FSM:** Se confirma y documenta el uso oficial del grafo de **6 estados** (`PRECALENTANDO`, `CALIBRANDO`, `VIGILANDO`, `SOSPECHA`, `ALARMA_CONFIRMADA`, `ERROR_SEGURO`) alineado con el firmware real.
+* **Umbral MQ-2:** Se aclara que el firmware calcula el umbral de forma **adimensional (Rs/R0)**. Los valores previos en kΩ fueron corregidos, mostrando ahora los valores reales extraídos de la salida serial (`mq2_umbral: 0.67`).
+* **Protección de Hardware:** El montaje físico cuenta con un filtro RC (resistencia de 1 kΩ y capacitor de 100 nF) en la entrada del GPIO 34.
+* **Tensión del regulador (LM2596):** Se documenta que la calibración física de la salida del regulador se realizó durante las primeras etapas de soldadura y montaje (a cargo de Victoria y Fiorella). Mediante multímetro, se ajustó a ~5V estables, fundamentando la constante `VC_SENSOR_MV`.
+* **Autoría:** Se estructuró e incluyó la tabla de trazabilidad por tramos en este README para dar estricto cumplimiento al criterio D7.
+* **Lógica de confirmación de alarma (SOSPECHA):** Se analizaron las observaciones docentes sobre el retraso ante incendios lejanos (donde solo llega humo) y la falta de escalamiento por humo persistente. Se mantuvo de forma consciente la exigencia de 2 sensores para blindar el sistema contra falsas alarmas, documentando como trabajo futuro (Evaluación 3) la implementación de un contador de reincidencia y umbral térmico relativo.
 
 ---
 
@@ -66,7 +69,6 @@ El campo `estado` en el payload JSON se publica como **valor numérico** según 
 
 * **Precalentamiento y Calibración:** 3 minutos (180 s) iniciales no bloqueantes para permitir el equilibrio térmico del MQ-2. Posteriormente, se promedian exactamente **60 muestras** (`N_MUESTRAS_CAL`, tomadas cada 50 ms) para establecer la línea base en aire limpio.
 * **Umbral Adaptativo MQ-2 (Adimensional $Rs/R0$):** 
-  * Se subsanó la interpretación previa de resistencia en kΩ; el firmware opera con la razón adimensional $Rs/R0$.
   * Se define con una caída base del 30% respecto a $R0$ ($1.0$), ajustada dinámicamente sumando 3 desviaciones estándar ($3 \cdot \sigma$) para compensar el ruido del montaje (restringido entre un `MIN: 0.50` y `MAX: 0.85`).
   * *Datos de prueba real:* Con una línea base de 584 mV, se obtuvo un umbral dinámico real de `0.67`, reflejado directamente en el JSON (`"mq2_umbral": 0.67`).
 * **Umbrales Críticos:** Temperatura crítica configurada en $40.0^\circ\text{C}$ / $60.0^\circ\text{C}$ según la escala de validación para evitar falsas alarmas ambientales y facilitar la demostración física.
